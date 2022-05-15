@@ -5,6 +5,10 @@ pub struct Config {
     pub safe_respawn_distance: u32,
     pub asteroid_min_speed: f64,
     pub asteroid_max_speed: f64,
+    pub ship_linear_acceleration: u32,
+    pub ship_linear_friction: f64,
+    pub ship_angular_acceleration: u32,
+    pub ship_angular_friction: f64,
 }
 
 impl Config {
@@ -16,6 +20,10 @@ impl Config {
             safe_respawn_distance: 300,
             asteroid_min_speed: 50.0,
             asteroid_max_speed: 100.0,
+            ship_linear_acceleration: 20,
+            ship_linear_friction: 0.1,
+            ship_angular_acceleration: 45,
+            ship_angular_friction: 0.1,
         }
     }
 }

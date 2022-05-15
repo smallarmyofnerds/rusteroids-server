@@ -2,8 +2,11 @@ use crate::asteroid::AsteroidSize;
 use crate::asteroid_factory::AsteroidFactory;
 use crate::config::Config;
 use crate::id_generator::IdGenerator;
+use crate::player::Player;
+use crate::projectile::Projectile;
+use crate::ship::Ship;
 use crate::vector::Vector2;
-use crate::world_objects::{Collide, WorldAsteroid};
+use crate::world_objects::{Collide, WorldAsteroid, WorldProjectile, WorldShip};
 use rand::Rng;
 
 pub struct World {
@@ -14,6 +17,8 @@ pub struct World {
     position_generator: PositionGenerator,
     asteroid_factory: AsteroidFactory,
     asteroids: Vec<WorldAsteroid>,
+    ships: Vec<WorldShip>,
+    projectiles: Vec<WorldProjectile>,
 }
 
 pub struct PositionGenerator {
@@ -59,6 +64,8 @@ impl World {
             position_generator,
             asteroid_factory,
             asteroids,
+            ships: vec![],
+            projectiles: vec![],
         }
     }
 
@@ -69,6 +76,19 @@ impl World {
     fn update_all(&mut self, delta: f64) {
         for asteroid in &mut self.asteroids {
             asteroid.update(delta);
+        }
+
+        let mut new_projectiles: Vec<Box<dyn Projectile>> = vec![];
+
+        for ship in &mut self.ships {
+            let mut update_results = ship.update(delta);
+            new_projectiles.append(&mut update_results);
+        }
+        for projectile in new_projectiles {
+            self.projectiles.push(WorldProjectile::new(
+                self.id_generator.get_next_id(),
+                projectile,
+            ));
         }
     }
 
@@ -100,8 +120,12 @@ impl World {
         }
     }
 
-    pub fn create_ship(&mut self) {
+    pub fn create_ship<'a>(&mut self, player: Box<Player>) {
         let position = self.safe_respawn_position();
+        self.ships.push(WorldShip::new(
+            self.id_generator.get_next_id(),
+            Ship::new(&self.config, position, player),
+        ))
     }
 
     pub fn update(&mut self, delta: f64) {

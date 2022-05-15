@@ -70,6 +70,16 @@ impl ops::Mul<f64> for Vector2 {
     }
 }
 
+impl ops::Mul<Vector2> for f64 {
+    type Output = Vector2;
+
+    fn mul(self, rhs: Vector2) -> Vector2 {
+        Vector2 {
+            x: self * rhs.x,
+            y: self * rhs.y,
+        }
+    }
+}
 impl fmt::Display for Vector2 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({}, {})", self.x, self.y)

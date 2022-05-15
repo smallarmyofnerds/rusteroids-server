@@ -2,12 +2,17 @@ mod asteroid;
 mod asteroid_factory;
 mod config;
 mod id_generator;
+mod inputs;
+mod player;
+mod projectile;
+mod ship;
 mod vector;
 mod world;
 mod world_objects;
 
 use asteroid::Asteroid;
 use config::Config;
+use player::Player;
 use rand::Rng;
 use std::fmt;
 use vector::Vector2;
@@ -74,4 +79,6 @@ fn main() {
     let config = Config::new();
     let mut world = World::new(config);
     world.update(0.1);
+    let player = Box::new(Player::new());
+    world.create_ship(player);
 }
