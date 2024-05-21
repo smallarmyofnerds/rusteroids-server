@@ -1,21 +1,30 @@
+mod armoury;
 mod asteroid;
 mod asteroid_factory;
+mod collides;
 mod config;
+mod cool_down;
+mod double_shot_cannon;
 mod id_generator;
 mod inputs;
+mod laser_cannon;
+mod moveable_object;
+mod physical_object;
 mod player;
+mod position_generator;
 mod projectile;
+mod projectile_factory;
 mod ship;
+mod spread_shot_cannon;
+mod timer;
 mod vector;
+mod weapon;
 mod world;
-mod world_objects;
+mod world_object;
 
-use asteroid::Asteroid;
 use config::Config;
 use player::Player;
-use rand::Rng;
-use std::fmt;
-use vector::Vector2;
+use timer::Timer;
 use world::World;
 
 // trait Object {
@@ -77,8 +86,12 @@ use world::World;
 
 fn main() {
     let config = Config::new();
+    let mut timer = Timer::new(1.0);
     let mut world = World::new(config);
-    world.update(0.1);
     let player = Box::new(Player::new());
     world.create_ship(player);
+    for _ in 0..5 {
+        timer.tick();
+        world.update(&timer);
+    }
 }

@@ -1,13 +1,15 @@
-use crate::asteroid::AsteroidSize;
+use crate::asteroid::{Asteroid, AsteroidSize};
 use crate::asteroid_factory::AsteroidFactory;
+use crate::collides::Collides;
 use crate::config::Config;
 use crate::id_generator::IdGenerator;
 use crate::player::Player;
+use crate::position_generator::PositionGenerator;
 use crate::projectile::Projectile;
+use crate::projectile_factory::ProjectileFactory;
 use crate::ship::Ship;
+use crate::timer::Timer;
 use crate::vector::Vector2;
-use crate::world_objects::{Collide, WorldAsteroid, WorldProjectile, WorldShip};
-use rand::Rng;
 
 pub struct World {
     width: u32,
@@ -16,30 +18,9 @@ pub struct World {
     id_generator: IdGenerator,
     position_generator: PositionGenerator,
     asteroid_factory: AsteroidFactory,
-    asteroids: Vec<WorldAsteroid>,
-    ships: Vec<WorldShip>,
-    projectiles: Vec<WorldProjectile>,
-}
-
-pub struct PositionGenerator {
-    max_width: u32,
-    max_height: u32,
-}
-
-impl PositionGenerator {
-    pub fn new(max_width: u32, max_height: u32) -> Self {
-        PositionGenerator {
-            max_width,
-            max_height,
-        }
-    }
-
-    pub fn random_position(&self) -> Vector2 {
-        Vector2 {
-            x: rand::thread_rng().gen::<f64>() * self.max_width as f64,
-            y: rand::thread_rng().gen::<f64>() * self.max_height as f64,
-        }
-    }
+    asteroids: Vec<Box<Asteroid>>,
+    ships: Vec<Box<Ship>>,
+    projectiles: Vec<Box<dyn Projectile>>,
 }
 
 impl World {
@@ -47,12 +28,12 @@ impl World {
         let mut id_generator = IdGenerator::new();
         let position_generator = PositionGenerator::new(config.world_width, config.world_height);
         let asteroid_factory = AsteroidFactory::new(&config);
-        let mut asteroids: Vec<WorldAsteroid> = vec![];
+        let mut asteroids: Vec<Box<Asteroid>> = vec![];
         for _ in 0..config.world_min_obstacles {
-            asteroids.push(WorldAsteroid::new(
+            asteroids.push(asteroid_factory.create_at(
                 id_generator.get_next_id(),
-                asteroid_factory
-                    .create_at(AsteroidSize::Large, position_generator.random_position()),
+                AsteroidSize::Large,
+                position_generator.random_position(),
             ));
         }
 
@@ -70,37 +51,48 @@ impl World {
     }
 
     fn remove_deleted(&mut self) {
-        self.asteroids.retain(|a| !a.deleted);
+        self.asteroids.retain(|a| !a.is_deleted());
+        self.projectiles.retain(|a| !a.is_deleted());
     }
 
-    fn update_all(&mut self, delta: f64) {
-        for asteroid in &mut self.asteroids {
-            asteroid.update(delta);
-        }
+    fn update_all(&mut self, timer: &Timer) {
+        self.update_asteroids(timer);
+        self.update_projectiles(timer);
+        self.update_ships(timer);
+    }
 
-        let mut new_projectiles: Vec<Box<dyn Projectile>> = vec![];
-
+    fn update_ships(&mut self, timer: &Timer) {
+        let projectile_factory = ProjectileFactory::new(&mut self.id_generator);
         for ship in &mut self.ships {
-            let mut update_results = ship.update(delta);
-            new_projectiles.append(&mut update_results);
+            let new_projectiles = ship.update(timer, &projectile_factory);
+            self.projectiles.append(new_projectiles);
+            for projectile in new_projectiles {
+                self.projectiles.push(WorldProjectile::new(
+                    self.id_generator.get_next_id(),
+                    projectile,
+                ));
+            }
         }
-        for projectile in new_projectiles {
-            self.projectiles.push(WorldProjectile::new(
-                self.id_generator.get_next_id(),
-                projectile,
-            ));
+    }
+
+    fn update_projectiles(&mut self, timer: &Timer) {
+        for projectile in &mut self.projectiles {
+            projectile.update(timer);
+        }
+    }
+    fn update_asteroids(&mut self, timer: &Timer) {
+        for asteroid in &mut self.asteroids {
+            asteroid.update(timer);
         }
     }
 
     fn top_up_asteroids(&mut self) {
         let count = self.asteroids.len();
         for _ in count..self.config.world_min_obstacles {
-            self.asteroids.push(WorldAsteroid::new(
+            self.asteroids.push(self.asteroid_factory.create_at(
                 self.id_generator.get_next_id(),
-                self.asteroid_factory.create_at(
-                    AsteroidSize::Large,
-                    self.position_generator.random_position(),
-                ),
+                AsteroidSize::Large,
+                self.position_generator.random_position(),
             ));
         }
     }
@@ -110,27 +102,44 @@ impl World {
         loop {
             let position = self.position_generator.random_position();
             for o in collidable_objects {
-                if o.distance_squared_to(position)
-                    > (self.config.safe_respawn_distance as f64
-                        * self.config.safe_respawn_distance as f64)
-                {
+                if o.within_range_of(position, self.config.safe_respawn_distance.into()) {
                     return position;
                 }
             }
         }
     }
 
-    pub fn create_ship<'a>(&mut self, player: Box<Player>) {
+    pub fn create_ship(&mut self, player: Box<Player>) {
         let position = self.safe_respawn_position();
-        self.ships.push(WorldShip::new(
+        self.ships.push(Box::new(Ship::new(
             self.id_generator.get_next_id(),
-            Ship::new(&self.config, position, player),
-        ))
+            &self.config,
+            position,
+            player,
+        )))
     }
 
-    pub fn update(&mut self, delta: f64) {
+    fn test_ship_collisions(&mut self) {
+        let mut collisions = vec![];
+        for ship in &self.ships {
+            for other in &self.ships {
+                if other.get_id() != ship.get_id() {
+                    if ship.collides_with(other.as_ref()) {
+                        collisions.push((ship, other));
+                    }
+                }
+            }
+        }
+        for (ship, other) in &mut collisions {
+            // ship.collide_with(other);
+            // other.collide_with(other);
+        }
+    }
+
+    pub fn update(&mut self, timer: &Timer) {
         self.remove_deleted();
-        self.update_all(delta);
+        self.update_all(timer);
+        self.test_ship_collisions();
         self.top_up_asteroids();
     }
 }
