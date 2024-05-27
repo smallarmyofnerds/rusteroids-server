@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::asteroid::{AsteroidDescriptor, AsteroidSize};
 
+#[derive(Clone)]
 pub struct Config {
     pub world_width: u32,
     pub world_height: u32,

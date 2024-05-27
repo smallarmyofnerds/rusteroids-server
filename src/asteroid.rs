@@ -1,9 +1,8 @@
-use crate::collides::Collides;
 use crate::moveable_object::MoveableObject;
+use crate::object::{Object, ObjectType};
 use crate::physical_object::PhysicalObject;
 use crate::timer::Timer;
 use crate::vector::Vector2;
-use crate::world_object::WorldObject;
 
 #[derive(Clone, Copy, Hash, Eq, PartialEq)]
 pub enum AsteroidSize {
@@ -21,13 +20,11 @@ pub struct AsteroidDescriptor {
 }
 
 pub struct Asteroid {
-    world_object: WorldObject,
     physical_object: PhysicalObject,
 }
 
 impl Asteroid {
     pub fn new(
-        id: u64,
         position: Vector2,
         velocity: Vector2,
         orientation: Vector2,
@@ -35,7 +32,6 @@ impl Asteroid {
         descriptor: AsteroidDescriptor,
     ) -> Self {
         Self {
-            world_object: WorldObject::new(id),
             physical_object: PhysicalObject::new(
                 MoveableObject::new(position, velocity, orientation, rotational_velocity),
                 descriptor.radius,
@@ -44,16 +40,22 @@ impl Asteroid {
             ),
         }
     }
-
-    pub fn is_deleted(&self) -> bool {
-        self.world_object.deleted
-    }
-    pub fn update(&mut self, timer: &Timer) {
-        self.physical_object.update(timer);
-    }
 }
 
-impl Collides for Asteroid {
+impl Object for Asteroid {
+    fn is_flagged_for_destruction(&self) -> bool {
+        self.physical_object.is_flagged_for_destruction()
+    }
+
+    fn get_type(&self) -> crate::object::ObjectType {
+        ObjectType::Asteroid
+    }
+
+    fn update(&mut self, timer: &Timer) -> Vec<Box<dyn Object>> {
+        self.physical_object.update(timer);
+        vec![]
+    }
+
     fn distance_squared_to(&self, position: Vector2) -> f64 {
         self.physical_object.distance_squared_to(position)
     }
@@ -62,15 +64,15 @@ impl Collides for Asteroid {
         self.physical_object.within_range_of(position, range)
     }
 
-    fn collides_with(&self, other: &dyn Collides) -> bool {
+    fn collides_with(&self, other: &Box<dyn Object>) -> bool {
         self.physical_object.collides_with(other)
     }
 
-    fn collide_with(&self, other: &mut dyn Collides, world_object: &mut WorldObject) {
-        self.physical_object.collide_with(other, world_object);
+    fn collide_with(&self, other: &mut Box<dyn Object>) {
+        self.physical_object.collide_with(other);
     }
 
-    fn apply_damage(&mut self, amount: u64, world_object: &mut WorldObject) {
-        self.physical_object.apply_damage(amount, world_object)
+    fn apply_damage(&mut self, amount: u64) {
+        self.physical_object.apply_damage(amount)
     }
 }

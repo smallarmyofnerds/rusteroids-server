@@ -1,12 +1,13 @@
-use crate::asteroid::{Asteroid, AsteroidSize};
+use std::borrow::{Borrow, BorrowMut};
+use std::cell::RefCell;
+
+use crate::asteroid::AsteroidSize;
 use crate::asteroid_factory::AsteroidFactory;
-use crate::collides::Collides;
 use crate::config::Config;
-use crate::id_generator::IdGenerator;
+use crate::object::{Object, ObjectType};
+use crate::object_db::ObjectDb;
 use crate::player::Player;
 use crate::position_generator::PositionGenerator;
-use crate::projectile::Projectile;
-use crate::projectile_factory::ProjectileFactory;
 use crate::ship::Ship;
 use crate::timer::Timer;
 use crate::vector::Vector2;
@@ -15,82 +16,46 @@ pub struct World {
     width: u32,
     height: u32,
     config: Config,
-    id_generator: IdGenerator,
     position_generator: PositionGenerator,
     asteroid_factory: AsteroidFactory,
-    asteroids: Vec<Box<Asteroid>>,
-    ships: Vec<Box<Ship>>,
-    projectiles: Vec<Box<dyn Projectile>>,
+    object_db: ObjectDb,
 }
 
 impl World {
     pub fn new(config: Config) -> Self {
-        let mut id_generator = IdGenerator::new();
-        let position_generator = PositionGenerator::new(config.world_width, config.world_height);
-        let asteroid_factory = AsteroidFactory::new(&config);
-        let mut asteroids: Vec<Box<Asteroid>> = vec![];
-        for _ in 0..config.world_min_obstacles {
-            asteroids.push(asteroid_factory.create_at(
-                id_generator.get_next_id(),
-                AsteroidSize::Large,
-                position_generator.random_position(),
-            ));
-        }
-
         Self {
             width: config.world_width,
             height: config.world_height,
-            config,
-            id_generator,
-            position_generator,
-            asteroid_factory,
-            asteroids,
-            ships: vec![],
-            projectiles: vec![],
+            config: config.clone(),
+            position_generator: PositionGenerator::new(config.world_width, config.world_height),
+            asteroid_factory: AsteroidFactory::new(&config),
+            object_db: ObjectDb::new(),
         }
     }
 
     fn remove_deleted(&mut self) {
-        self.asteroids.retain(|a| !a.is_deleted());
-        self.projectiles.retain(|a| !a.is_deleted());
+        self.object_db.remove_deleted();
     }
 
     fn update_all(&mut self, timer: &Timer) {
-        self.update_asteroids(timer);
-        self.update_projectiles(timer);
-        self.update_ships(timer);
-    }
-
-    fn update_ships(&mut self, timer: &Timer) {
-        let projectile_factory = ProjectileFactory::new(&mut self.id_generator);
-        for ship in &mut self.ships {
-            let new_projectiles = ship.update(timer, &projectile_factory);
-            self.projectiles.append(new_projectiles);
-            for projectile in new_projectiles {
-                self.projectiles.push(WorldProjectile::new(
-                    self.id_generator.get_next_id(),
-                    projectile,
-                ));
-            }
+        let mut new_objects = vec![];
+        for o in self.object_db.all() {
+            let object = o.get_object();
+            let mut wat = object.borrow_mut().update(timer);
+            // let results = wat.update(timer);
+            new_objects.append(&mut wat)
         }
-    }
-
-    fn update_projectiles(&mut self, timer: &Timer) {
-        for projectile in &mut self.projectiles {
-            projectile.update(timer);
-        }
-    }
-    fn update_asteroids(&mut self, timer: &Timer) {
-        for asteroid in &mut self.asteroids {
-            asteroid.update(timer);
+        for o in new_objects {
+            self.object_db.add(o);
         }
     }
 
     fn top_up_asteroids(&mut self) {
-        let count = self.asteroids.len();
+        let count = self
+            .object_db
+            .count_where(|o| o.get_object().borrow().get_type() == ObjectType::Asteroid);
         for _ in count..self.config.world_min_obstacles {
-            self.asteroids.push(self.asteroid_factory.create_at(
-                self.id_generator.get_next_id(),
+            self.object_db.add(self.asteroid_factory.create_at(
                 AsteroidSize::Large,
                 self.position_generator.random_position(),
             ));
@@ -98,11 +63,18 @@ impl World {
     }
 
     fn safe_respawn_position(&self) -> Vector2 {
-        let collidable_objects = &self.asteroids;
         loop {
             let position = self.position_generator.random_position();
-            for o in collidable_objects {
-                if o.within_range_of(position, self.config.safe_respawn_distance.into()) {
+            for o in self.object_db.all_where(|o| {
+                let object_type = o.get_object().borrow().get_type();
+                object_type == ObjectType::Ship
+                    || object_type == ObjectType::Asteroid
+                    || object_type == ObjectType::Projectile
+            }) {
+                if o.get_object()
+                    .borrow()
+                    .within_range_of(position, self.config.safe_respawn_distance.into())
+                {
                     return position;
                 }
             }
@@ -111,28 +83,36 @@ impl World {
 
     pub fn create_ship(&mut self, player: Box<Player>) {
         let position = self.safe_respawn_position();
-        self.ships.push(Box::new(Ship::new(
-            self.id_generator.get_next_id(),
-            &self.config,
-            position,
-            player,
-        )))
+        self.object_db
+            .add(Box::new(Ship::new(&self.config, position, player)))
     }
 
     fn test_ship_collisions(&mut self) {
         let mut collisions = vec![];
-        for ship in &self.ships {
-            for other in &self.ships {
-                if other.get_id() != ship.get_id() {
-                    if ship.collides_with(other.as_ref()) {
-                        collisions.push((ship, other));
-                    }
+        for ship in self
+            .object_db
+            .all_where(|o| o.get_object().borrow().get_type() == ObjectType::Ship)
+        {
+            for other in self.object_db.all_where(|o| {
+                o.get_object().borrow().get_type() == ObjectType::Ship
+                    && o.get_id() != ship.get_id()
+            }) {
+                if ship
+                    .get_object()
+                    .borrow()
+                    .collides_with(&other.get_object().borrow())
+                {
+                    collisions.push((ship.get_id(), other.get_id()));
+                    // ship.get_object_mut().collide_with(other.get_object_mut());
                 }
             }
         }
-        for (ship, other) in &mut collisions {
-            // ship.collide_with(other);
-            // other.collide_with(other);
+        for (shipId, otherId) in collisions {
+            let ship = self.object_db.get(shipId).get_object().borrow();
+            let mut other = self.object_db.get(otherId).get_object().borrow_mut();
+            ship.collide_with(&mut other);
+            //     ship.get_object_mut().collide_with(other.get_object_mut());
+            //     // other.get_object_mut().collide_with(ship.get_object_mut());
         }
     }
 

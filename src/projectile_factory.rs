@@ -1,19 +1,13 @@
-use crate::{id_generator::IdGenerator, projectile::Laser, vector::Vector2};
+use crate::{object::Object, projectile::Laser, vector::Vector2};
 
-pub struct ProjectileFactory<'a> {
-    id_generator: &'a mut IdGenerator,
-}
+pub struct ProjectileFactory {}
 
-impl<'a> ProjectileFactory<'a> {
-    pub fn new(id_generator: &mut IdGenerator) -> Self {
-        Self { id_generator }
+impl ProjectileFactory {
+    pub fn new() -> Self {
+        Self {}
     }
 
-    pub fn create_laser(&self, position: Vector2, velocity: Vector2) -> Box<Laser> {
-        Box::new(Laser::new(
-            self.id_generator.get_next_id(),
-            position,
-            velocity,
-        ))
+    pub fn create_laser(&self, position: Vector2, velocity: Vector2) -> Box<dyn Object> {
+        Box::new(Laser::new(position, velocity))
     }
 }

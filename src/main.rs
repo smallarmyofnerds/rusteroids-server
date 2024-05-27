@@ -1,7 +1,6 @@
 mod armoury;
 mod asteroid;
 mod asteroid_factory;
-mod collides;
 mod config;
 mod cool_down;
 mod double_shot_cannon;
@@ -9,6 +8,8 @@ mod id_generator;
 mod inputs;
 mod laser_cannon;
 mod moveable_object;
+mod object;
+mod object_db;
 mod physical_object;
 mod player;
 mod position_generator;
@@ -20,7 +21,6 @@ mod timer;
 mod vector;
 mod weapon;
 mod world;
-mod world_object;
 
 use config::Config;
 use player::Player;

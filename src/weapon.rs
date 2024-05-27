@@ -1,6 +1,4 @@
-use crate::{
-    projectile::Projectile, projectile_factory::ProjectileFactory, timer::Timer, vector::Vector2,
-};
+use crate::{object::Object, projectile_factory::ProjectileFactory, timer::Timer, vector::Vector2};
 
 pub trait Weapon {
     fn shoot_from(
@@ -9,5 +7,5 @@ pub trait Weapon {
         projectile_factory: &ProjectileFactory,
         origin: Vector2,
         orientation: Vector2,
-    ) -> Vec<Box<dyn Projectile>>;
+    ) -> Vec<Box<dyn Object>>;
 }

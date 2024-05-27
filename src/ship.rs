@@ -1,19 +1,18 @@
 use crate::armoury::{Armoury, WeaponType};
-use crate::collides::Collides;
 use crate::config::Config;
 use crate::moveable_object::MoveableObject;
+use crate::object::{Object, ObjectType};
 use crate::physical_object::PhysicalObject;
 use crate::player::Player;
-use crate::projectile::Projectile;
 use crate::projectile_factory::ProjectileFactory;
 use crate::timer::Timer;
 use crate::vector::Vector2;
-use crate::world_object::WorldObject;
 
 pub struct Ship {
-    world_object: WorldObject,
+    is_flagged_for_destruction: bool,
     physical_object: PhysicalObject,
     player: Box<Player>,
+    projectile_factory: ProjectileFactory,
     engine_on: bool,
     acceleration_rate: u32,
     linear_friction: f64,
@@ -24,9 +23,9 @@ pub struct Ship {
 }
 
 impl Ship {
-    pub fn new(id: u64, config: &Config, position: Vector2, player: Box<Player>) -> Self {
+    pub fn new(config: &Config, position: Vector2, player: Box<Player>) -> Self {
         Ship {
-            world_object: WorldObject::new(id),
+            is_flagged_for_destruction: false,
             physical_object: PhysicalObject::new(
                 MoveableObject::new(position, Vector2::EMPTY, Vector2::UP, 0.0),
                 40.0,
@@ -34,6 +33,7 @@ impl Ship {
                 1000,
             ),
             player,
+            projectile_factory: ProjectileFactory::new(),
             engine_on: false,
             acceleration_rate: config.ship_linear_acceleration,
             linear_friction: config.ship_linear_friction,
@@ -42,10 +42,6 @@ impl Ship {
             armoury: Box::new(Armoury::new(config)),
             active_weapon_type: WeaponType::LaserCanon,
         }
-    }
-
-    pub fn get_id(&self) -> u64 {
-        self.world_object.get_id()
     }
 
     fn set_active_weapon(&mut self, weapon_type: WeaponType) {
@@ -86,24 +82,22 @@ impl Ship {
     //     self.object.orientation
     // }
 
-    fn shoot(
-        &mut self,
-        timer: &Timer,
-        projectile_factory: &ProjectileFactory,
-    ) -> Vec<Box<dyn Projectile>> {
+    fn shoot(&mut self, timer: &Timer) -> Vec<Box<dyn Object>> {
         self.armoury.get(self.active_weapon_type).shoot_from(
             timer,
-            projectile_factory,
+            &self.projectile_factory,
             self.physical_object.get_position(),
             self.physical_object.get_orientation(),
         )
     }
+}
 
-    pub fn update(
-        &mut self,
-        timer: &Timer,
-        projectile_factory: &ProjectileFactory,
-    ) -> Vec<Box<dyn Projectile>> {
+impl Object for Ship {
+    fn is_flagged_for_destruction(&self) -> bool {
+        self.physical_object.is_flagged_for_destruction()
+    }
+
+    fn update(&mut self, timer: &Timer) -> Vec<Box<dyn Object>> {
         let inputs = self.player.get_inputs();
 
         self.engine_on = inputs.up;
@@ -131,14 +125,16 @@ impl Ship {
         self.physical_object.update(timer);
 
         if inputs.fire {
-            self.shoot(timer, projectile_factory)
+            self.shoot(timer)
         } else {
             vec![]
         }
     }
-}
 
-impl Collides for Ship {
+    fn get_type(&self) -> ObjectType {
+        ObjectType::Ship
+    }
+
     fn within_range_of(&self, position: Vector2, range: f64) -> bool {
         self.physical_object.within_range_of(position, range)
     }
@@ -147,15 +143,15 @@ impl Collides for Ship {
         self.physical_object.distance_squared_to(position)
     }
 
-    fn collides_with(&self, other: &dyn Collides) -> bool {
+    fn collides_with(&self, other: &Box<dyn Object>) -> bool {
         self.physical_object.collides_with(other)
     }
 
-    fn collide_with(&self, other: &mut dyn Collides, world_object: &mut WorldObject) {
-        self.physical_object.collide_with(other, world_object);
+    fn collide_with(&self, other: &mut Box<dyn Object>) {
+        self.physical_object.collide_with(other);
     }
 
-    fn apply_damage(&mut self, amount: u64, world_object: &mut WorldObject) {
-        self.physical_object.apply_damage(amount, world_object);
+    fn apply_damage(&mut self, amount: u64) {
+        self.physical_object.apply_damage(amount);
     }
 }

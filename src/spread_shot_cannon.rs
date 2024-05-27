@@ -1,6 +1,6 @@
 use crate::{
-    cool_down::CoolDown, projectile::Projectile, projectile_factory::ProjectileFactory,
-    timer::Timer, vector::Vector2, weapon::Weapon,
+    cool_down::CoolDown, object::Object, projectile_factory::ProjectileFactory, timer::Timer,
+    vector::Vector2, weapon::Weapon,
 };
 
 pub struct SpreadShotCannon {
@@ -26,7 +26,7 @@ impl Weapon for SpreadShotCannon {
         projectile_factory: &ProjectileFactory,
         position: Vector2,
         orientation: Vector2,
-    ) -> Vec<Box<dyn Projectile>> {
+    ) -> Vec<Box<dyn Object>> {
         if self.cool_down.can_shoot() {
             self.cool_down.shoot(timer);
             return vec![

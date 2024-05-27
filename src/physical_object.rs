@@ -1,11 +1,9 @@
 use std::cmp::max;
 
-use crate::{
-    collides::Collides, moveable_object::MoveableObject, timer::Timer, vector::Vector2,
-    world_object::WorldObject,
-};
+use crate::{moveable_object::MoveableObject, object::Object, timer::Timer, vector::Vector2};
 
 pub struct PhysicalObject {
+    is_flagged_for_destruction: bool,
     moveable_object: MoveableObject,
     pub radius: f64,
     pub health: u64,
@@ -15,11 +13,16 @@ pub struct PhysicalObject {
 impl PhysicalObject {
     pub fn new(moveable_object: MoveableObject, radius: f64, health: u64, damage: u64) -> Self {
         Self {
+            is_flagged_for_destruction: false,
             moveable_object,
             radius,
             health,
             damage,
         }
+    }
+
+    pub fn is_flagged_for_destruction(&self) -> bool {
+        self.is_flagged_for_destruction
     }
 
     pub fn update(&mut self, timer: &Timer) {
@@ -57,29 +60,27 @@ impl PhysicalObject {
     pub fn set_rotational_velocity(&mut self, value: f64) {
         self.moveable_object.set_rotational_velocity(value);
     }
-}
 
-impl Collides for PhysicalObject {
-    fn distance_squared_to(&self, position: Vector2) -> f64 {
+    pub fn distance_squared_to(&self, position: Vector2) -> f64 {
         self.moveable_object.distance_squared_to(position)
     }
 
-    fn within_range_of(&self, position: Vector2, range: f64) -> bool {
+    pub fn within_range_of(&self, position: Vector2, range: f64) -> bool {
         self.distance_squared_to(position) > ((self.radius + range) * (self.radius + range))
     }
 
-    fn collides_with(&self, other: &dyn Collides) -> bool {
+    pub fn collides_with(&self, other: &Box<dyn Object>) -> bool {
         other.within_range_of(self.moveable_object.get_position(), self.radius)
     }
 
-    fn collide_with(&self, other: &mut dyn Collides, world_object: &mut WorldObject) {
-        other.apply_damage(self.damage, world_object);
+    pub fn collide_with(&self, other: &mut Box<dyn Object>) {
+        other.apply_damage(self.damage);
     }
 
-    fn apply_damage(&mut self, amount: u64, world_object: &mut WorldObject) {
+    pub fn apply_damage(&mut self, amount: u64) {
         self.health = max(self.health - amount, 0);
         if self.health == 0 {
-            world_object.destroy();
+            self.is_flagged_for_destruction = true
         }
     }
 }

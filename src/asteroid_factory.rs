@@ -20,9 +20,8 @@ impl AsteroidFactory {
         }
     }
 
-    pub fn create_at(&self, id: u64, size: AsteroidSize, position: Vector2) -> Box<Asteroid> {
+    pub fn create_at(&self, size: AsteroidSize, position: Vector2) -> Box<Asteroid> {
         Box::new(Asteroid::new(
-            id,
             position,
             Vector2::UP.rotate(rand::thread_rng().gen::<f64>() * 360.0)
                 * self
