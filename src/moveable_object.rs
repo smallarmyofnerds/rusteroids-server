@@ -38,17 +38,17 @@ impl MoveableObject {
         self.rotational_velocity
     }
 
-    pub fn set_position(&mut self, value: Vector2) {
-        self.position = value;
-    }
+    // pub fn set_position(&mut self, value: Vector2) {
+    //     self.position = value;
+    // }
 
     pub fn set_velocity(&mut self, value: Vector2) {
         self.velocity = value;
     }
 
-    pub fn set_orientation(&mut self, value: Vector2) {
-        self.orientation = value
-    }
+    // pub fn set_orientation(&mut self, value: Vector2) {
+    //     self.orientation = value
+    // }
 
     pub fn set_rotational_velocity(&mut self, value: f64) {
         self.rotational_velocity = value

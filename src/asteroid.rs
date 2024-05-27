@@ -56,7 +56,7 @@ impl Object for Asteroid {
         vec![]
     }
 
-    fn distance_squared_to(&self, position: Vector2) -> f64 {
+    fn _distance_squared_to(&self, position: Vector2) -> f64 {
         self.physical_object.distance_squared_to(position)
     }
 

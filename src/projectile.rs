@@ -39,7 +39,7 @@ impl Object for Laser {
         self.physical_object.within_range_of(position, range)
     }
 
-    fn distance_squared_to(&self, position: Vector2) -> f64 {
+    fn _distance_squared_to(&self, position: Vector2) -> f64 {
         self.physical_object.distance_squared_to(position)
     }
 

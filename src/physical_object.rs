@@ -45,17 +45,17 @@ impl PhysicalObject {
         self.moveable_object.get_rotational_velocity()
     }
 
-    pub fn set_position(&mut self, value: Vector2) {
-        self.moveable_object.set_position(value);
-    }
+    // pub fn set_position(&mut self, value: Vector2) {
+    //     self.moveable_object.set_position(value);
+    // }
 
     pub fn set_velocity(&mut self, value: Vector2) {
         self.moveable_object.set_velocity(value);
     }
 
-    pub fn set_orientation(&mut self, value: Vector2) {
-        self.moveable_object.set_orientation(value);
-    }
+    // pub fn set_orientation(&mut self, value: Vector2) {
+    //     self.moveable_object.set_orientation(value);
+    // }
 
     pub fn set_rotational_velocity(&mut self, value: f64) {
         self.moveable_object.set_rotational_velocity(value);

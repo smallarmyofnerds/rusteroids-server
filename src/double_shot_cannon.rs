@@ -1,4 +1,4 @@
-use std::f64::consts::{FRAC_PI_2, PI};
+use std::f64::consts::{FRAC_PI_2};
 
 use crate::{
     cool_down::CoolDown, object::Object, projectile_factory::ProjectileFactory, timer::Timer,

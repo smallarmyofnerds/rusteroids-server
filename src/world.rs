@@ -1,10 +1,7 @@
-use std::borrow::{Borrow, BorrowMut};
-use std::cell::RefCell;
-
 use crate::asteroid::AsteroidSize;
 use crate::asteroid_factory::AsteroidFactory;
 use crate::config::Config;
-use crate::object::{Object, ObjectType};
+use crate::object::ObjectType;
 use crate::object_db::ObjectDb;
 use crate::player::Player;
 use crate::position_generator::PositionGenerator;
@@ -13,8 +10,8 @@ use crate::timer::Timer;
 use crate::vector::Vector2;
 
 pub struct World {
-    width: u32,
-    height: u32,
+    _width: u32,
+    _height: u32,
     config: Config,
     position_generator: PositionGenerator,
     asteroid_factory: AsteroidFactory,
@@ -24,8 +21,8 @@ pub struct World {
 impl World {
     pub fn new(config: Config) -> Self {
         Self {
-            width: config.world_width,
-            height: config.world_height,
+            _width: config.world_width,
+            _height: config.world_height,
             config: config.clone(),
             position_generator: PositionGenerator::new(config.world_width, config.world_height),
             asteroid_factory: AsteroidFactory::new(&config),
@@ -103,16 +100,13 @@ impl World {
                     .collides_with(&other.get_object().borrow())
                 {
                     collisions.push((ship.get_id(), other.get_id()));
-                    // ship.get_object_mut().collide_with(other.get_object_mut());
                 }
             }
         }
-        for (shipId, otherId) in collisions {
-            let ship = self.object_db.get(shipId).get_object().borrow();
-            let mut other = self.object_db.get(otherId).get_object().borrow_mut();
+        for (ship_id, other_id) in collisions {
+            let ship = self.object_db.get(ship_id).get_object().borrow();
+            let mut other = self.object_db.get(other_id).get_object().borrow_mut();
             ship.collide_with(&mut other);
-            //     ship.get_object_mut().collide_with(other.get_object_mut());
-            //     // other.get_object_mut().collide_with(ship.get_object_mut());
         }
     }
 

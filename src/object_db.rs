@@ -42,11 +42,11 @@ impl ObjectDb {
         self.objects_by_id.insert(id, self.objects.len() - 1);
     }
 
-    pub fn for_each(&mut self, f: impl Fn(&DbObject)) {
-        for o in &mut self.objects {
-            f(o);
-        }
-    }
+    // pub fn for_each(&mut self, f: impl Fn(&DbObject)) {
+    //     for o in &mut self.objects {
+    //         f(o);
+    //     }
+    // }
 
     fn reindex(&mut self) {
         self.objects_by_id.clear();

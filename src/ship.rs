@@ -9,7 +9,6 @@ use crate::timer::Timer;
 use crate::vector::Vector2;
 
 pub struct Ship {
-    is_flagged_for_destruction: bool,
     physical_object: PhysicalObject,
     player: Box<Player>,
     projectile_factory: ProjectileFactory,
@@ -25,7 +24,6 @@ pub struct Ship {
 impl Ship {
     pub fn new(config: &Config, position: Vector2, player: Box<Player>) -> Self {
         Ship {
-            is_flagged_for_destruction: false,
             physical_object: PhysicalObject::new(
                 MoveableObject::new(position, Vector2::EMPTY, Vector2::UP, 0.0),
                 40.0,
@@ -44,7 +42,7 @@ impl Ship {
         }
     }
 
-    fn set_active_weapon(&mut self, weapon_type: WeaponType) {
+    fn _set_active_weapon(&mut self, weapon_type: WeaponType) {
         self.active_weapon_type = weapon_type;
     }
 
@@ -139,7 +137,7 @@ impl Object for Ship {
         self.physical_object.within_range_of(position, range)
     }
 
-    fn distance_squared_to(&self, position: Vector2) -> f64 {
+    fn _distance_squared_to(&self, position: Vector2) -> f64 {
         self.physical_object.distance_squared_to(position)
     }
 
