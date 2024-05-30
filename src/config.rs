@@ -14,6 +14,7 @@ pub struct Config {
     pub ship_linear_friction: f64,
     pub ship_angular_acceleration: u32,
     pub ship_angular_friction: f64,
+    pub ship_starting_shield: u64,
     pub laser_canon_cool_down: f64,
     pub laser_canon_laser_speed: u32,
     pub rapid_fire_cannon_laser_speed: u32,
@@ -25,6 +26,12 @@ pub struct Config {
     pub spread_shot_cannon_spread_angle: f64,
     pub spread_shot_cannon_cool_down: f64,
     pub asteroid_descriptors: HashMap<AsteroidSize, AsteroidDescriptor>,
+    pub power_up_min_speed: f64,
+    pub power_up_max_speed: f64,
+    pub power_up_health_amount: u64,
+    pub power_up_mega_health_amount: u64,
+    pub power_up_shield_amount: u64,
+    pub power_up_mega_shield_amount: u64,
 }
 
 impl Config {
@@ -40,6 +47,7 @@ impl Config {
             ship_linear_friction: 0.1,
             ship_angular_acceleration: 45,
             ship_angular_friction: 0.1,
+            ship_starting_shield: 1000,
             laser_canon_cool_down: 0.5,
             laser_canon_laser_speed: 100,
             rapid_fire_cannon_laser_speed: 300,
@@ -79,6 +87,12 @@ impl Config {
                     },
                 ),
             ]),
+            power_up_min_speed: 50.0,
+            power_up_max_speed: 100.0,
+            power_up_health_amount: 400,
+            power_up_mega_health_amount: 1000,
+            power_up_shield_amount: 400,
+            power_up_mega_shield_amount: 1000,
         }
     }
 }

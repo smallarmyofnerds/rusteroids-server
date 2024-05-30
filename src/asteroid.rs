@@ -1,6 +1,10 @@
+use std::rc::Rc;
+
+use crate::asteroid_factory::AsteroidFactory;
 use crate::moveable_object::MoveableObject;
 use crate::object::{Object, ObjectType};
 use crate::physical_object::PhysicalObject;
+use crate::power_up_factory::PowerUpFactory;
 use crate::timer::Timer;
 use crate::vector::Vector2;
 
@@ -20,7 +24,10 @@ pub struct AsteroidDescriptor {
 }
 
 pub struct Asteroid {
+    size: AsteroidSize,
     physical_object: PhysicalObject,
+    asteroid_factory: Rc<AsteroidFactory>,
+    power_up_factory: Rc<PowerUpFactory>,
 }
 
 impl Asteroid {
@@ -30,14 +37,20 @@ impl Asteroid {
         orientation: Vector2,
         rotational_velocity: f64,
         descriptor: AsteroidDescriptor,
+        asteroid_factory: Rc<AsteroidFactory>,
+        power_up_factory: Rc<PowerUpFactory>,
     ) -> Self {
         Self {
+            size: descriptor.size,
             physical_object: PhysicalObject::new(
                 MoveableObject::new(position, velocity, orientation, rotational_velocity),
                 descriptor.radius,
                 descriptor.health,
+                descriptor.health,
                 descriptor.damage,
             ),
+            asteroid_factory,
+            power_up_factory,
         }
     }
 }
@@ -73,6 +86,73 @@ impl Object for Asteroid {
     }
 
     fn apply_damage(&mut self, amount: u64) {
-        self.physical_object.apply_damage(amount)
+        self.physical_object.apply_damage(amount);
+    }
+
+    fn destroy(&self) -> Vec<Box<dyn Object>> {
+        match self.size {
+            AsteroidSize::Large => vec![
+                self.asteroid_factory.create_at(
+                    AsteroidSize::Medium,
+                    self.physical_object.get_position(),
+                    self.asteroid_factory.clone(),
+                ),
+                self.asteroid_factory.create_at(
+                    AsteroidSize::Medium,
+                    self.physical_object.get_position(),
+                    self.asteroid_factory.clone(),
+                ),
+                self.asteroid_factory.create_at(
+                    AsteroidSize::Medium,
+                    self.physical_object.get_position(),
+                    self.asteroid_factory.clone(),
+                ),
+                self.power_up_factory
+                    .create_at(self.size, self.physical_object.get_position()),
+                self.power_up_factory
+                    .create_at(self.size, self.physical_object.get_position()),
+                self.power_up_factory
+                    .create_at(self.size, self.physical_object.get_position()),
+            ],
+            AsteroidSize::Medium => vec![
+                self.asteroid_factory.create_at(
+                    AsteroidSize::Small,
+                    self.physical_object.get_position(),
+                    self.asteroid_factory.clone(),
+                ),
+                self.asteroid_factory.create_at(
+                    AsteroidSize::Small,
+                    self.physical_object.get_position(),
+                    self.asteroid_factory.clone(),
+                ),
+                self.asteroid_factory.create_at(
+                    AsteroidSize::Small,
+                    self.physical_object.get_position(),
+                    self.asteroid_factory.clone(),
+                ),
+                self.power_up_factory
+                    .create_at(self.size, self.physical_object.get_position()),
+                self.power_up_factory
+                    .create_at(self.size, self.physical_object.get_position()),
+                self.power_up_factory
+                    .create_at(self.size, self.physical_object.get_position()),
+            ],
+            AsteroidSize::Small => vec![
+                self.power_up_factory
+                    .create_at(self.size, self.physical_object.get_position()),
+                self.power_up_factory
+                    .create_at(self.size, self.physical_object.get_position()),
+                self.power_up_factory
+                    .create_at(self.size, self.physical_object.get_position()),
+            ],
+        }
+    }
+
+    fn as_ship(&self) -> Result<&crate::ship::Ship, &'static str> {
+        Err("Asteroid!")
+    }
+
+    fn as_ship_mut(&mut self) -> Result<&mut crate::ship::Ship, &'static str> {
+        Err("Asteroid!")
     }
 }

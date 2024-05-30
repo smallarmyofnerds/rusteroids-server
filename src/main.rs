@@ -13,6 +13,8 @@ mod object_db;
 mod physical_object;
 mod player;
 mod position_generator;
+mod power_up;
+mod power_up_factory;
 mod projectile;
 mod projectile_factory;
 mod ship;
@@ -22,8 +24,15 @@ mod vector;
 mod weapon;
 mod world;
 
+use std::{collections::HashMap, rc::Rc};
+
+use asteroid::AsteroidSize;
+use asteroid_factory::AsteroidFactory;
 use config::Config;
 use player::Player;
+use position_generator::PositionGenerator;
+use power_up::PowerUpType;
+use power_up_factory::PowerUpFactory;
 use timer::Timer;
 use world::World;
 
@@ -87,10 +96,45 @@ use world::World;
 fn main() {
     let config = Config::new();
     let mut timer = Timer::new(1.0);
-    let mut world = World::new(config);
-    let player = Box::new(Player::new());
-    world.create_ship(player);
+    let position_generator = PositionGenerator::new(config.world_width, config.world_height);
+    let mut power_up_selections: HashMap<AsteroidSize, Vec<PowerUpType>> = HashMap::new();
+    power_up_selections.insert(
+        AsteroidSize::Large,
+        vec![
+            PowerUpType::DoubleShotLaser,
+            PowerUpType::SpreadShotLaser,
+            PowerUpType::RapidShotLaser,
+            PowerUpType::Health(config.power_up_health_amount),
+            PowerUpType::Shield(config.power_up_shield_amount),
+        ],
+    );
+    power_up_selections.insert(
+        AsteroidSize::Medium,
+        vec![
+            PowerUpType::DoubleShotLaser,
+            PowerUpType::SpreadShotLaser,
+            PowerUpType::RapidShotLaser,
+            PowerUpType::Health(config.power_up_health_amount),
+            PowerUpType::Shield(config.power_up_shield_amount),
+            PowerUpType::MegaHealth(config.power_up_mega_health_amount),
+            PowerUpType::MegaShield(config.power_up_mega_shield_amount),
+        ],
+    );
+    power_up_selections.insert(
+        AsteroidSize::Small,
+        vec![
+            PowerUpType::RapidShotLaser,
+            PowerUpType::MegaHealth(config.power_up_mega_health_amount),
+            PowerUpType::MegaShield(config.power_up_mega_shield_amount),
+        ],
+    );
+
+    let power_up_factory = Rc::new(PowerUpFactory::new(&config, power_up_selections));
+    let asteroid_factory = Rc::new(AsteroidFactory::new(&config, power_up_factory.clone()));
+    let mut world = World::new(config, &position_generator, asteroid_factory.clone());
+    world.create_ship(Box::new(Player::new()));
     for _ in 0..5 {
+        println!("Ticking...");
         timer.tick();
         world.update(&timer);
     }

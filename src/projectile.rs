@@ -16,6 +16,7 @@ impl Laser {
                 100.0,
                 100,
                 100,
+                100,
             ),
         }
     }
@@ -53,5 +54,17 @@ impl Object for Laser {
 
     fn apply_damage(&mut self, amount: u64) {
         self.physical_object.apply_damage(amount)
+    }
+
+    fn destroy(&self) -> Vec<Box<dyn Object>> {
+        vec![]
+    }
+
+    fn as_ship(&self) -> Result<&crate::ship::Ship, &'static str> {
+        Err("Projectile!")
+    }
+
+    fn as_ship_mut(&mut self) -> Result<&mut crate::ship::Ship, &'static str> {
+        Err("Projectile!")
     }
 }

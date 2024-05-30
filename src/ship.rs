@@ -19,6 +19,7 @@ pub struct Ship {
     rotational_velocity_friction: f64,
     armoury: Box<Armoury>,
     active_weapon_type: WeaponType,
+    shield: u64,
 }
 
 impl Ship {
@@ -27,6 +28,7 @@ impl Ship {
             physical_object: PhysicalObject::new(
                 MoveableObject::new(position, Vector2::EMPTY, Vector2::UP, 0.0),
                 40.0,
+                1000,
                 1000,
                 1000,
             ),
@@ -39,11 +41,20 @@ impl Ship {
             rotational_velocity_friction: config.ship_angular_friction,
             armoury: Box::new(Armoury::new(config)),
             active_weapon_type: WeaponType::LaserCanon,
+            shield: config.ship_starting_shield,
         }
     }
 
-    fn _set_active_weapon(&mut self, weapon_type: WeaponType) {
+    pub fn set_active_weapon(&mut self, weapon_type: WeaponType) {
         self.active_weapon_type = weapon_type;
+    }
+
+    pub fn heal(&mut self, amount: u64) {
+        self.physical_object.heal(amount);
+    }
+
+    pub fn charge_shield(&mut self, amount: u64) {
+        self.shield += amount;
     }
 
     fn get_rotation(&self, rotating_left: bool, rotating_right: bool) -> f64 {
@@ -151,5 +162,17 @@ impl Object for Ship {
 
     fn apply_damage(&mut self, amount: u64) {
         self.physical_object.apply_damage(amount);
+    }
+
+    fn destroy(&self) -> Vec<Box<dyn Object>> {
+        vec![]
+    }
+
+    fn as_ship(&self) -> Result<&Ship, &'static str> {
+        Ok(self)
+    }
+
+    fn as_ship_mut(&mut self) -> Result<&mut Ship, &'static str> {
+        Ok(self)
     }
 }

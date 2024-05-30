@@ -1,4 +1,4 @@
-use std::cmp::max;
+use std::cmp::{max, min};
 
 use crate::{moveable_object::MoveableObject, object::Object, timer::Timer, vector::Vector2};
 
@@ -6,16 +6,24 @@ pub struct PhysicalObject {
     is_flagged_for_destruction: bool,
     moveable_object: MoveableObject,
     pub radius: f64,
+    pub max_health: u64,
     pub health: u64,
     pub damage: u64,
 }
 
 impl PhysicalObject {
-    pub fn new(moveable_object: MoveableObject, radius: f64, health: u64, damage: u64) -> Self {
+    pub fn new(
+        moveable_object: MoveableObject,
+        radius: f64,
+        max_health: u64,
+        health: u64,
+        damage: u64,
+    ) -> Self {
         Self {
             is_flagged_for_destruction: false,
             moveable_object,
             radius,
+            max_health,
             health,
             damage,
         }
@@ -82,5 +90,9 @@ impl PhysicalObject {
         if self.health == 0 {
             self.is_flagged_for_destruction = true
         }
+    }
+
+    pub fn heal(&mut self, amount: u64) {
+        self.health = min(self.health + amount, self.max_health);
     }
 }
